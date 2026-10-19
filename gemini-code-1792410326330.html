@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tonka - ເວັບເຕີມເກມ</title>
+
+    <!-- 🛠️ Script ບຳບັດ WebView & LocalStorage ສຳລັບແອັບມືຖື -->
+    <script>
+        try {
+            window.localStorage.setItem("test_storage", "ok");
+            window.localStorage.removeItem("test_storage");
+        } catch(e) {
+            console.warn("WebView LocalStorage warning:", e);
+        }
+    </script>
+
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            emailjs.init("2Rr4eiGTv6nzu1xT0");
+        })();
+    </script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <style>
+        * { box-sizing: border-box; font-family: sans-serif; margin: 0; padding: 0; }
+        body { background-color: #0d0b14; color: #e2e8f0; padding: 20px; text-align: center; position: relative; overflow-x: hidden; }
+        h1 { color: #a855f7; margin-bottom: 15px; text-shadow: 0 0 10px rgba(168, 85, 247, 0.5); font-size: 28px; }
+        
+        /* ❄️ CSS ສຳລັບເອັບເຟັກຫິມະຕົກ ❄️ */
+        .snowflake {
+            position: fixed;
+            top: -10px;
+            color: #c084fc;
+            user-select: none;
+            pointer-events: none;
+            z-index: 9999;
+            animation-name: fall, sway;
+            animation-iteration-count: infinite, infinite;
+            animation-timing-function: linear, ease-in-out;
+        }
+
+        @keyframes fall {
+            0% { top: -10px; }
+            100% { top: 100vh; }
+        }
+
+        @keyframes sway {
+            0% { transform: translateX(0px); }
+            50% { transform: translateX(25px); }
+            100% { transform: translateX(0px); }
+        }
+
+        /* 🔘 ປຸ່ມເປີດ-ປິດເອັບເຟັກຫິມະ */
+        .snow-toggle-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background: #171024;
+            border: 2px solid #a855f7;
+            color: #c084fc;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 10000;
+            box-shadow: 0 4px 10px rgba(168, 85, 247, 0.3);
+            transition: 0.2s;
+        }
+        .snow-toggle-btn:hover {
+            background: #a855f7;
+            color: #0d0b14;
+        }
+
+        .top-banner-single { display: flex; justify-content: center; margin-bottom: 25px; }
+        .top-banner-single img { width: 100%; max-width: 500px; height: auto; border-radius: 12px; border: 2px solid #a855f7; box-shadow: 0 5px 15px rgba(168, 85, 247, 0.3); }
+
+        .auth-bar { background: #171024; max-width: 450px; margin: 0 auto 20px auto; padding: 20px; border-radius: 12px; border: 1px solid #3b2a54; }
+        .user-info { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .btn-auth { background: #a855f7; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 15px; }
+        .btn-logout { background: #7e22ce; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-topup-money { background: #a855f7; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-topup-card-bar { background: #a855f7; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-admin-panel { background: #eab308; color: #0d0b14; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 8px; display: none; }
+
+        .auth-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .auth-tab { flex: 1; padding: 10px; background: #0d0b14; border: 1px solid #3b2a54; color: #e2e8f0; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
+        .auth-tab.active { background: #a855f7; color: #fff; }
+
+        .forgot-link { display: block; text-align: right; color: #c084fc; font-size: 13px; margin-top: 5px; cursor: pointer; text-decoration: underline; }
+
+        .btn-whatsapp { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #25D366; color: #fff; text-decoration: none; font-weight: bold; padding: 12px 20px; border-radius: 25px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(37, 211, 102, 0.4); font-size: 15px; }
+
+        .store-status-card { max-width: 450px; margin: 0 auto 20px auto; padding: 12px; border-radius: 10px; font-size: 18px; font-weight: bold; transition: 0.3s; }
+        .store-open { background-color: #064e3b; color: #34d399; border: 1px solid #34d399; }
+        .store-closed { background-color: #7f1d1d; color: #fca5a5; border: 1px solid #fca5a5; }
+
+        .bell-container { max-width: 450px; margin: 0 auto 15px auto; text-align: right; display: none; }
+        .btn-bell { background: #171024; border: 1px solid #a855f7; color: #c084fc; padding: 8px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+        .notification-dropdown { background: #171024; border: 1px solid #a855f7; border-radius: 10px; padding: 12px; margin-top: 8px; text-align: left; display: none; max-height: 250px; overflow-y: auto; }
+
+        .game-grid { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 25px; }
+        .game-card { background: #171024; border: 2px solid #3b2a54; border-radius: 12px; padding: 12px; width: 140px; cursor: pointer; transition: 0.3s; }
+        .game-card:hover { border-color: #a855f7; transform: translateY(-5px); }
+        .game-card img { width: 100%; height: 80px; object-fit: cover; border-radius: 8px; }
+        .game-card p { margin-top: 6px; font-weight: bold; font-size: 13px; color: #fff; }
+
+        /* 🎡 Wheel CSS */
+        .wheel-section { background: #171024; max-width: 450px; margin: 0 auto 25px auto; padding: 20px; border-radius: 15px; border: 1px solid #3b2a54; text-align: center; }
+        .wheel-container { position: relative; width: 280px; height: 280px; margin: 15px auto; }
+        .wheel { width: 100%; height: 100%; border-radius: 50%; border: 6px solid #a855f7; position: relative; overflow: hidden; transition: transform 4s cubic-bezier(0.15, 0.9, 0.2, 1); background: #0d0b14; box-shadow: 0 0 15px rgba(168, 85, 247, 0.4); }
+        .wheel-slice { position: absolute; width: 50%; height: 50%; top: 0; right: 0; transform-origin: 0% 100%; display: flex; align-items: center; justify-content: center; }
+        .wheel-text { position: absolute; left: -100%; width: 200%; text-align: center; font-size: 14px; font-weight: bold; color: #ffffff; text-shadow: 0 0 5px #000, 0 0 2px #000; transform: rotate(90deg) translateY(-85px); }
+        .wheel-pointer { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-top: 25px solid #facc15; z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
+
+        .form-container { background: #171024; max-width: 450px; margin: 0 auto; padding: 25px; border-radius: 15px; display: none; text-align: left; border: 1px solid #3b2a54; }
+        .form-container.active { display: block; }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 6px; color: #c084fc; font-weight: bold; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #3b2a54; background: #0d0b14; color: #fff; font-size: 15px; outline: none; }
+        
+        .email-box { display: flex; gap: 8px; }
+        .btn-email-send { background: #a855f7; color: #fff; border: none; padding: 0 12px; border-radius: 6px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+
+        button.btn-submit { width: 100%; padding: 14px; background: linear-gradient(45deg, #9333ea, #7e22ce); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        button.btn-submit:disabled { background: #555 !important; cursor: not-allowed; opacity: 0.7; }
+
+        .qr-box { text-align: center; background: #171024; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #3b2a54; }
+        .qr-box img { width: 220px; height: auto; border-radius: 8px; display: block; margin: 0 auto; }
+
+        .status-box { background: #171024; max-width: 450px; margin: 15px auto; padding: 15px; border-radius: 12px; border: 1px solid #3b2a54; text-align: left; display: none; }
+        .status-pending { color: #f59e0b; border: 1px solid #f59e0b; background: #451a03; padding: 12px; border-radius: 6px; margin-top: 8px; font-weight: bold; }
+        .status-success { color: #34d399; border: 1px solid #34d399; background: #064e3b; padding: 12px; border-radius: 6px; margin-top: 8px; font-weight: bold; }
+        .status-fail { color: #fca5a5; border: 1px solid #fca5a5; background: #7f1d1d; padding: 12px; border-radius: 6px; margin-top: 8px; font-weight: bold; }
+        .status-custom { color: #c084fc; border: 1px solid #c084fc; background: #271a3d; padding: 12px; border-radius: 6px; margin-top: 8px; font-weight: bold; }
+
+        .btn-status-action { width: 31%; padding: 8px 4px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: #fff; margin-top: 8px; font-size: 12px; }
+        .btn-pending-bg { background: #d97706; }
+        .btn-success-bg { background: #059669; }
+        .btn-fail-bg { background: #dc2626; }
+
+        .slip-img-preview { max-width: 100%; height: auto; max-height: 250px; border-radius: 8px; border: 2px solid #a855f7; margin-top: 8px; cursor: pointer; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 9999; }
+        .modal-card { background: #171024; border: 2px solid #a855f7; border-radius: 16px; padding: 25px; width: 90%; max-width: 340px; text-align: center; box-shadow: 0 0 25px rgba(168,85,247,0.4); animation: scaleUp 0.3s ease; }
+        @keyframes scaleUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .spinner { width: 50px; height: 50px; border: 4px solid #3b2a54; border-top: 4px solid #a855f7; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .packages-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            max-height: 280px;
+            overflow-y: auto;
+            padding: 4px;
+            margin-bottom: 15px;
+        }
+        .package-card-item {
+            background: #0d0b14;
+            border: 2px solid #3b2a54;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            transition: 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .package-card-item:hover {
+            border-color: #a855f7;
+        }
+        .package-card-item.selected {
+            border-color: #a855f7;
+            background: #271a3d;
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+        }
+        .pkg-badge {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background: linear-gradient(45deg, #9333ea, #a855f7);
+            color: #fff;
+            font-size: 9px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .pkg-emoji {
+            font-size: 32px;
+            margin: 8px 0 4px 0;
+            line-height: 40px;
+        }
+        .pkg-name {
+            font-size: 12px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        .pkg-price {
+            font-size: 13px;
+            font-weight: bold;
+            color: #c084fc;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ❄️ Container ສຳລັບສ້າງເມັດຫິມະຕົກ ❄️ -->
+    <div id="snow-container"></div>
+
+    <!-- 🔘 ປຸ່ມກົດເປີດ-ປິດເອັບເຟັກຫິມະ -->
+    <button id="snow-toggle-btn" class="snow-toggle-btn" onclick="toggleSnowEffect()">❄️ ປິດຫິມະ</button>
+
+    <h1>💎 TONKA 💎</h1>
+    <p style="color: #c084fc; margin-bottom: 5px; font-weight: bold;">ປອດໄພ 100% | ເຕີມໄວ ທັນໃຈ</p>
+    <p style="color: #38bdf8; margin-bottom: 15px; font-weight: bold; font-size: 14px;">📞 ເບີຕິດຕໍ່: 02091298408</p>
+
+    <a href="https://wa.me/8562091298408" target="_blank" class="btn-whatsapp">
+        💬 ທັກຫາແອດມິນ WhatsApp (020 91298408)
+    </a>
+
+    <div id="storeStatusDisplay" class="store-status-card store-open">
+        🟢 ຮ້ານເປີດຢູ່ (ພ້ອມຮັບອໍເດີ)
+    </div>
+
+    <div id="bell-section" class="bell-container">
+        <button class="btn-bell" onclick="toggleNotificationDropdown()">
+            🔔 ແຈ້ງເຕືອນ (<span id="notif-count">0</span>)
+        </button>
+        <div id="notification-dropdown" class="notification-dropdown">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <b style="color: #c084fc; font-size: 13px;">ປະຫວັດການແຈ້ງເຕືອນ</b>
+                <button onclick="clearAllNotifications()" style="background: #a855f7; color: #fff; border:none; padding:2px 6px; border-radius:4px; font-size:10px; cursor:pointer;">🗑️ ລຶບທັງໝົດ</button>
+            </div>
+            <div id="notification-list" style="font-size: 12px; color: #ccc;">
+                ຍັງບໍ່ມີການແຈ້ງເຕືອນ
+            </div>
+        </div>
+    </div>
+
+    <div class="top-banner-single">
+        <img src="Tonka.png" alt="Tonka">
+    </div>
+
+    <div class="auth-bar">
+        <div id="auth-logged-out">
+            <div class="auth-tabs">
+                <div id="tab-login" class="auth-tab active" onclick="switchAuthMode('login')">ເຂົ້າສູ່ລະບົບ</div>
+                <div id="tab-register" class="auth-tab" onclick="switchAuthMode('register')">ສະໝັກສະມາຊິກ</div>
+            </div>
+            
+            <div class="form-group">
+                <input type="text" id="auth-username" placeholder="ຊື່ສະມາຊິກ (Username)">
+            </div>
+
+            <div id="gmail-group" class="form-group" style="display: none;">
+                <div class="email-box">
+                    <input type="email" id="auth-gmail" placeholder="Gmail (ເຊັ່ນ: example@gmail.com)">
+                    <button id="btn-send-code" class="btn-email-send" style="display: none;" onclick="sendRealEmailCode()">ສົ່ງລະຫັດເຂົ້າ Gmail</button>
+                </div>
+            </div>
+
+            <div id="code-group" class="form-group" style="display: none;">
+                <input type="text" id="auth-email-code" placeholder="ປ້ອນລະຫັດ 6 ຫຼັກ ຈາກກ່ອງຈົດໝາຍ Gmail">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 5px;">
+                <input type="password" id="auth-password" placeholder="ລະຫັດຜ່ານ (Password)">
+                <span id="forgot-btn-link" class="forgot-link" onclick="switchAuthMode('forgot')">🔑 ລືມລະຫັດຜ່ານ?</span>
+            </div>
+
+            <button id="auth-btn" class="btn-auth" onclick="handleAuth()">ເຂົ້າສູ່ລະບົບ</button>
+        </div>
+
+        <div id="auth-logged-in" class="user-info" style="display: none; width: 100%;">
+            <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <span>👤 <b id="display-username" style="color: #c084fc;"></b></span><br>
+                    <span style="font-size: 14px; color: #34d399;">💰 ຍອດເງິນ: <b id="display-balance">0</b> ກີບ</span>
+                </div>
+                
+                <div>
+                    <button class="btn-topup-card-bar" onclick="openCardMoneyForm()">📱 ບັດເຕີມເນັດ</button>
+                </div>
+
+                <div style="display: flex; gap: 5px;">
+                    <button class="btn-topup-money" onclick="openMoneyForm()">➕ ຕື່ມເງິນ</button>
+                    <button class="btn-logout" onclick="logout()">ອອກ</button>
+                </div>
+            </div>
+            <button id="btn-admin" class="btn-admin-panel" onclick="openAdminPanel()">⚙️ ຈັດການລະບົບ & ຈັດການສະຕ໊ອກ (Admin Panel)</button>
+        </div>
+    </div>
+
+    <div id="status-panel" class="status-box">
+        <h3 style="color: #c084fc; font-size: 16px; margin-bottom: 8px;">🔔 ສະຖານະ ແລະ ຂໍ້ຄວາມຈາກແອດມິນ:</h3>
+        <div id="status-message">ຍັງບໍ່ມີປະວັດການເຕີມ</div>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div id="admin-form" class="form-container" style="max-width: 500px;">
+        <h2 style="margin-bottom: 15px; color: #eab308; text-align: center;">⚙️ ແອດມິນ: ຈັດການລະບົບ</h2>
+        
+        <div class="form-group" style="background: #0d0b14; padding: 12px; border-radius: 8px; border: 1px solid #eab308; margin-bottom: 15px;">
+            <label style="color: #eab308;">🔘 ຈັດການສະຖານະການເປີດ-ປິດຮ້ານ:</label>
+            <button id="adminToggleStoreBtn" class="btn-submit" style="background: #a855f7; color: #fff; margin-top: 5px;" onclick="toggleStoreOpenStatus()">
+                ປ່ຽນເປັນ: 🔴 ຮ້ານປິດ
+            </button>
+        </div>
+
+        <div class="form-group" style="background: #0d0b14; padding: 12px; border-radius: 8px; border: 1px solid #a855f7; margin-bottom: 15px;">
+            <label style="color: #c084fc;">🎟️ ສ້າງໂຄດເຕີມເງິນ (Redeem Code):</label>
+            <input type="text" id="admin-code-str" placeholder="ລະຫັດໂຄດ (ເຊັ່ນ: FREE50K)" style="margin-bottom: 8px;">
+            <input type="number" id="admin-code-amount" placeholder="ຈຳນວນເງິນທີ່ຈະໄດ້ (ກີບ)" style="margin-bottom: 8px;">
+            <input type="number" id="admin-code-limit" placeholder="ຈຳນວນຄົນທີ່ໃຊ້ໄດ້ (ຈຳກັດ)" value="1" min="1" style="margin-bottom: 8px;">
+            <button class="btn-submit" style="background: #a855f7; color: #fff; margin-top: 5px;" onclick="adminCreateRedeemCode()">➕ ສ້າງໂຄດເຕີມເງິນ</button>
+            <div id="admin-codes-manage-list" style="margin-top: 10px; max-height: 150px; overflow-y: auto; font-size: 12px;"></div>
+        </div>
+
+        <div class="form-group" style="background: #171024; padding: 12px; border-radius: 8px; border: 1px solid #a855f7; margin-bottom: 15px;">
+            <label style="color: #c084fc;">📋 ລາຍການອໍເດີ & ຮູບສະລິບທີ່ສົ່ງເຂົ້າມາ:</label>
+            <div id="admin-orders-list" style="max-height: 350px; overflow-y: auto; margin-top: 8px; font-size: 13px;">
+                <span style="color: #aaa;">ຍັງບໍ່ມີອໍເດີເຂົ້າມາ</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>ຊື່ລູກຄ້າ (Username):</label>
+            <input type="text" id="admin-target-user" placeholder="ປ້ອນຊື່ Username ຂອງລູກຄ້າ">
+        </div>
+
+        <div class="form-group">
+            <label>1. ບວກຍອດເງິນໃຫ້ລູກຄ້າ (ກີບ):</label>
+            <input type="number" id="admin-add-amount" placeholder="ຕົວຢ່າງ: 50000">
+            <button class="btn-submit" style="background: #eab308; color: #0d0b14; margin-top: 8px;" onclick="adminApproveMoney()">✅ ຢືນຢັນບວກຍອດເງິນ</button>
+        </div>
+
+        <div class="form-group" style="background: #0d0b14; padding: 12px; border-radius: 8px; border: 1px solid #f97316; margin-bottom: 15px;">
+            <label style="color: #f97316;">📢 2. ປ່ຽນສະຖານະ & ສົ່ງຂໍຄວາມຫາລູກຄ້າ:</label>
+            <div style="display: flex; gap: 5px; margin-bottom: 8px;">
+                <button type="button" class="btn-status-action btn-pending-bg" onclick="adminSetStatus('pending')">⏳ ໃຫ້ລໍຖ້າ</button>
+                <button type="button" class="btn-status-action btn-success-bg" onclick="adminSetStatus('success')">✅ ສຳເລັດ</button>
+                <button type="button" class="btn-status-action btn-fail-bg" onclick="adminSetStatus('fail')">❌ ບໍ່ສຳເລັດ</button>
+            </div>
+            <textarea id="admin-custom-msg" rows="2" placeholder="ພິມຂໍ້ຄວາມເພີ່ມເຕີມຫາລູກຄ້າ (ຖ້າມີ)..." style="margin-bottom: 8px;"></textarea>
+            <button class="btn-submit" style="background: #f97316; color: #0d0b14; margin-top: 0;" onclick="adminSendCustomMessage()">📤 ບັນທຶກສະຖານະ & ສົ່ງຂໍຄວາມ</button>
+        </div>
+
+        <button class="btn-submit" style="background: transparent; border: 1px dashed #a855f7; color: #c084fc; margin-top: 15px;" onclick="closeAdminPanel()">ປິດໜ້າຈໍແອດມິນ</button>
+    </div>
+
+    <!-- ຕື່ມເງິນ QR -->
+    <div id="money-form" class="form-container">
+        <h2 style="margin-bottom: 15px; color: #c084fc; text-align: center;">💳 ຕື່ມເງິນ</h2>
+        
+        <div style="background: #0d0b14; border: 1px solid #a855f7; padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
+            <label style="color: #c084fc; margin-bottom: 6px;">🎟️ ໃຊ້ໂຄດເຕີມເງິນ (Redeem Code):</label>
+            <input type="text" id="redeem-code-input" placeholder="ປ້ອນລະຫັດໂຄດຂອງທ່ານ" style="margin-bottom: 8px;">
+            <button class="btn-submit" style="background: #a855f7; color: #fff; margin-top: 0; padding: 10px;" onclick="submitRedeemCode()">🎁 ຢືນຢັນໃຊ້ໂຄດ</button>
+        </div>
+
+        <div class="qr-box">
+            <img src="qr.png" alt="LaoQR ທະນາຄານ">
+        </div>
+        <div class="form-group">
+            <label>ປ້ອນຈຳນວນເງິນທີ່ໂອນ (ກີບ):</label>
+            <input type="number" id="money-amount-input" placeholder="ຕົວຢ່າງ: 15000" min="1000">
+        </div>
+        <div class="form-group">
+            <label>ແນບຮູບໃບໂອນເງິນ (Slip):</label>
+            <input type="file" id="slip-file" accept="image/*">
+        </div>
+        <button class="btn-submit" onclick="submitMoneyTopup()">📤 ສົ່ງ Slip ໃຫ້ແອດມິນ</button>
+        <button class="btn-submit" style="background: #333;" onclick="closeMoneyForm()">ຍົກເລີກ</button>
+    </div>
+
+    <!-- ຕື່ມເງິນບັດ -->
+    <div id="card-money-form" class="form-container">
+        <h2 style="margin-bottom: 15px; color: #c084fc; text-align: center;">📱 ຕື່ມເງິນດ້ວຍບັດເຕີມເນັດ</h2>
+        <div style="background: #0d0b14; border: 1px solid #a855f7; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #c084fc; text-align: center;">
+            ⚠️ ເຄືອຂ່າຍ Unitel ຫັກຄ່າທຳນຽມ 35%<br>
+            ⚠️ ເຄືອຂ່າຍ Lao Telecom ຫັກຄ່າທຳນຽມ 40%
+        </div>
+        <div class="form-group">
+            <label>ເລືອກເຄືອຂ່າຍ:</label>
+            <select id="balance-card-network">
+                <option value="Unitel">Unitel (ຫັກ 35%)</option>
+                <option value="Lao Telecom">Lao Telecom (LTC) (ຫັກ 40%)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>ມູນຄ່າບັດ:</label>
+            <select id="balance-card-amount">
+                <option value="10000">10,000 ກີບ</option>
+                <option value="20000">20,000 ກີບ</option>
+                <option value="50000">50,000 ກີບ</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>ລະຫັດບັດ / Serial No.:</label>
+            <input type="text" id="balance-card-pin" placeholder="ປ້ອນລະຫັດບັດ">
+        </div>
+        <button class="btn-submit" onclick="submitCardMoneyTopup()">📤 ສົ່ງຂໍ້ມູນບັດ</button>
+        <button class="btn-submit" style="background: #333;" onclick="closeCardMoneyForm()">ຍົກເລີກ</button>
+    </div>
+
+    <!-- 🎮 ລາຍການເກມ -->
+    <div class="game-grid" id="dynamic-game-grid">
+        <div class="game-card" onclick="selectGame('Free Fire')">
+            <img src="freefire.png" alt="Free Fire">
+            <p>Free Fire</p>
+        </div>
+        <div class="game-card" onclick="selectGame('Mobile Legends')">
+            <img src="mobilelegends.png" alt="Mobile Legends">
+            <p>Mobile Legends</p>
+        </div>
+    </div>
+
+    <!-- 🎡 ວົງລໍ້ສຸ່ມເພັດ Free Fire -->
+    <div class="wheel-section">
+        <h3 style="color: #c084fc; margin-bottom: 5px; font-size: 18px;">🎡 ວົງລໍ້ສຸ່ມເພັດ Free Fire</h3>
+        <p style="font-size: 13px; color: #aaa; margin-bottom: 10px;">ໝຸນເທື່ອລະ 10,000 ກີບ (ລຸ້ນຮັບເພັດຟຣີເຂົ້າ ID ໂດຍກົງ!)</p>
+        
+        <div class="wheel-container">
+            <div class="wheel-pointer"></div>
+            <div id="wheel" class="wheel"></div>
+        </div>
+
+        <div class="form-group" style="margin-top: 15px;">
+            <input type="text" id="wheel-user-id" placeholder="ປ້ອນ Free Fire ID ຂອງທ່ານກ່ອນໝຸນ" style="text-align: center; margin-bottom: 10px;">
+        </div>
+        <button class="btn-submit" onclick="spinWheel()">🎲 ໝຸນວົງລໍ້ (10,000 ₭)</button>
+    </div>
+
+    <!-- 🎮 ໜ້າຊື້/ເຕີມເກມ -->
+    <div id="topup-form" class="form-container">
+        <h2 id="selected-game-title" style="margin-bottom: 20px; color: #c084fc; text-align: center;"></h2>
+        <div class="form-group">
+            <label id="id-label">ID ເກມ / Username:</label>
+            <input type="text" id="user-id" placeholder="ກະລຸນາປ້ອນ ID ເກມ">
+        </div>
+        
+        <div class="form-group">
+            <label>ເລືອກແພັກເກັດ:</label>
+            <div id="packages-container" class="packages-grid"></div>
+        </div>
+
+        <button class="btn-submit" onclick="submitTopup()">ດໍາເນີນການຊໍາລະເງິນ</button>
+        <button class="btn-submit" style="background: #333;" onclick="document.getElementById('topup-form').classList.remove('active')">ຍົກເລີກ</button>
+    </div>
+
+    <!-- 📱 ປຸ່ມດາວໂຫຼດແອັບ APK (ລຸ່ມສຸດ) -->
+    <div style="max-width: 450px; margin: 30px auto 10px auto; background: #171024; border: 2px dashed #a855f7; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.2);">
+        <h3 style="color: #c084fc; margin-bottom: 8px; font-size: 16px;">📥 ດາວໂຫຼດແອັບ Tonka</h3>
+        <p style="color: #ccc; font-size: 13px; margin-bottom: 15px;">ຕິດຕັ້ງແອັບລົງມືຖື Android ໄດ້ງ່າຍໆ ໃຊ້ງານສະດວກຂຶ້ນ 100%!</p>
+        <a href="https://www.mediafire.com/file/nml5n6pj0x781b6/2df0c97f-71a5-44c8-b0e6-53ad04959128.apk/file" target="_blank" style="display: inline-block; background: linear-gradient(45deg, #9333ea, #7e22ce); color: #fff; text-decoration: none; font-weight: bold; padding: 12px 25px; border-radius: 8px; font-size: 15px; box-shadow: 0 4px 10px rgba(147, 51, 234, 0.4);">
+            📲 ດາວໂຫຼດ APK ຕອນນີ້
+        </a>
+    </div>
+
+    <!-- 🌟 Modal / Popup -->
+    <div id="custom-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div id="modal-spinner" class="spinner"></div>
+            <h3 id="modal-title" style="color: #c084fc; margin-bottom: 10px; font-size: 18px;">ແຈ້ງເຕືອນ</h3>
+            <p id="modal-desc" style="font-size: 14px; color: #ccc; margin-bottom: 20px;">ຂໍ້ຄວາມ...</p>
+            <div id="modal-actions" style="display: flex; gap: 10px; justify-content: center;">
+                <button id="modal-btn-yes" class="btn-submit" style="margin-top: 0; background: #a855f7; color: #fff; display: none;" onclick="modalConfirmAction()">ຕົກລົງ</button>
+                <button id="modal-btn-no" class="btn-submit" style="margin-top: 0; background: #333; display: none;" onclick="closeModal()">ຍົກເລີກ</button>
+                <button id="modal-btn-ok" class="btn-submit" style="margin-top: 0; background: #a855f7; color: #fff; display: none;" onclick="closeModal()">ຮັບຊາບ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let snowActive = true;
+
+        function createSnowflakes() {
+            const snowContainer = document.getElementById('snow-container');
+            const flakeCount = 40; 
+            const icons = ['❄', '❅', '❆', '•'];
+
+            for (let i = 0; i < flakeCount; i++) {
+                const flake = document.createElement('div');
+                flake.className = 'snowflake';
+                flake.innerHTML = icons[Math.floor(Math.random() * icons.length)];
+                
+                const size = Math.random() * 15 + 10 + 'px';
+                const left = Math.random() * 100 + 'vw';
+                const fallDuration = Math.random() * 5 + 5 + 's';
+                const swayDuration = Math.random() * 3 + 2 + 's';
+                const delay = Math.random() * 5 + 's';
+                const opacity = Math.random() * 0.7 + 0.3;
+
+                flake.style.fontSize = size;
+                flake.style.left = left;
+                flake.style.animationDuration = `${fallDuration}, ${swayDuration}`;
+                flake.style.animationDelay = `${delay}, ${delay}`;
+                flake.style.opacity = opacity;
+
+                snowContainer.appendChild(flake);
+            }
+        }
+
+        function toggleSnowEffect() {
+            const snowContainer = document.getElementById('snow-container');
+            const toggleBtn = document.getElementById('snow-toggle-btn');
+            
+            snowActive = !snowActive;
+            if(snowActive) {
+                snowContainer.style.display = 'block';
+                toggleBtn.innerText = '❄️ ປິດຫິມະ';
+            } else {
+                snowContainer.style.display = 'none';
+                toggleBtn.innerText = '☀️ ເປີດຫິມະ';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            createSnowflakes();
+            initWheel();
+        });
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyCybvE214y4eUYQXZl3b1_BZhuftRezkCQ",
+          authDomain: "tonka-a8550.firebaseapp.com",
+          projectId: "tonka-a8550",
+          storageBucket: "tonka-a8550.firebasestorage.app",
+          messagingSenderId: "317261058025",
+          appId: "1:317261058025:web:d22cd66356688179888578",
+          measurementId: "G-15S3KFKTQ7"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let currentGame = '';
+        let authMode = 'login'; 
+        let currentUser = null;
+        let generatedCode = null;
+        let isStoreOpen = true;
+        let pendingAction = null;
+        let selectedPackageValue = null;
+        let selectedPackageText = '';
+
+        /* 🎡 Wheel Data & Logic */
+        const wheelSlices = [
+            { text: "33💎", value: "33 Diamonds", weight: 70 },
+            { text: "68💎", value: "68 Diamonds", weight: 40 },
+            { text: "172💎", value: "172 Diamonds", weight: 30 },
+            { text: "310💎", value: "310 Diamonds", weight: 10 },
+            { text: "ເກືອ❌", value: "ເກືອ", weight: 20 },
+            { text: "ເກືອ❌", value: "ເກືອ", weight: 20 },
+            { text: "ເກືອ❌", value: "ເກືອ", weight: 20 }
+        ];
+
+        function initWheel() {
+            const wheelEl = document.getElementById('wheel');
+            const numSlices = wheelSlices.length;
+            const sliceAngle = 360 / numSlices;
+            const colors = ['#3b1f63', '#1e1435', '#4c2685', '#28174a', '#5c2d9e', '#1c1033', '#321852'];
+            let html = '';
+
+            wheelSlices.forEach((slice, i) => {
+                const rotateDeg = i * sliceAngle;
+                const skewDeg = 90 - sliceAngle;
+                html += `
+                <div class="wheel-slice" style="transform: rotate(${rotateDeg}deg) skewY(-${skewDeg}deg); background: ${colors[i % colors.length]}; border: 1px solid rgba(168,85,247,0.3);">
+                    <div class="wheel-text" style="transform: skewY(${skewDeg}deg) rotate(${sliceAngle / 2}deg) translateY(-85px);">${slice.text}</div>
+                </div>`;
+            });
+            wheelEl.innerHTML = html;
+        }
+
+        let currentRotation = 0;
+        let isSpinning = false;
+
+        function spinWheel() {
+            if(isSpinning) return;
+
+            if(!isStoreOpen) {
+                showAlert('🔴 ຮ້ານປິດ', 'ຂໍໂທດດ້ວຍ ຮ້ານປິດຢູ່ຊົ່ວຄາວ!');
+                return;
+            }
+            if(!currentUser) {
+                showAlert('⚠️ ກະລຸນາເຂົ້າສູ່ລະບົບ', 'ກະລຸນາ "ເຂົ້າສູ່ລະບົບ" ກ່ອນໝຸນວົງລໍ້!');
+                return;
+            }
+
+            const wheelUserId = document.getElementById('wheel-user-id').value.trim();
+            if(!wheelUserId) {
+                showAlert('❌ ແຈ້ງເຕືອນ', 'ກະລຸນາປ້ອນ Free Fire ID ຂອງທ່ານກ່ອນ!');
+                return;
+            }
+
+            const spinCost = 10000;
+            if((currentUser.balance || 0) < spinCost) {
+                showAlert('❌ ຍອດເງິນບໍ່ພໍ', 'ຍອດເງິນໃນກະເປົາຂອງທ່ານບໍ່ພໍໝຸນວົງລໍ້ (ຄ່າໝຸນ 10,000 ₭)! ກະລຸນາຕື່ມເງິນ', () => { openMoneyForm(); });
+                return;
+            }
+
+            isSpinning = true;
+            const newBalance = currentUser.balance - spinCost;
+            const userKey = sanitizeKey(currentUser.username);
+
+            let totalWeight = wheelSlices.reduce((sum, s) => sum + s.weight, 0);
+            let randomNum = Math.random() * totalWeight;
+            let cumulativeWeight = 0;
+            let selectedIndex = 0;
+
+            for (let i = 0; i < wheelSlices.length; i++) {
+                cumulativeWeight += wheelSlices[i].weight;
+                if (randomNum <= cumulativeWeight) {
+                    selectedIndex = i;
+                    break;
+                }
+            }
+
+            const numSlices = wheelSlices.length;
+            const sliceAngle = 360 / numSlices;
+            const targetSliceCenter = (selectedIndex * sliceAngle) + (sliceAngle / 2);
+            
+            currentRotation += 1800 + (360 - targetSliceCenter) - (currentRotation % 360);
+
+            const wheelEl = document.getElementById('wheel');
+            wheelEl.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                isSpinning = false;
+                let wonItem = wheelSlices[selectedIndex];
+
+                db.ref('users/' + userKey + '/balance').set(newBalance).then(() => {
+                    if (wonItem.value !== "ເກືອ") {
+                        const notifMsg = `🎉 ຍິນດີດ້ວຍ! ທ່ານໝຸນວົງລໍ້ໄດ້ "${wonItem.text}" 🎁\nID ສົ່ງໃຫ້ແອດມິນເຕີມ: ${wheelUserId}`;
+                        db.ref('users/' + userKey + '/notifications').push({
+                            message: notifMsg,
+                            timestamp: Date.now()
+                        });
+
+                        db.ref('admin_orders').push({
+                            username: currentUser.username,
+                            game: 'Free Fire (ວົງລໍ້ສຸ່ມ)',
+                            packageText: `ລາງວົງລໍ້: ${wonItem.text}`,
+                            price: 10000,
+                            userId: wheelUserId,
+                            slipImage: '',
+                            timestamp: Date.now()
+                        });
+
+                        showAlert('🎉 ໝຸນວົງລໍ້ໄດ້ຮັບລາງວັນ!', `✨ ທ່ານໄດ້ຮັບ: ${wonItem.text}!\nລະບົບໄດ້ສົ່ງ ID (${wheelUserId}) ໃຫ້ແອດມິນເຕີມໃຫ້ແລ້ວ!`);
+                    } else {
+                        showAlert('😢 ຜົນການໝຸນ', 'ເສຍດາຍນຳ! ທ່ານໄດ້ "ເກືອ❌" ລອງໃໝ່ອີກຄັ້ງ!');
+                    }
+                });
+            }, 4000);
+        }
+
+        function sanitizeKey(text) {
+            return text.trim().toLowerCase().replace(/[.#$\[\]]/g, "_");
+        }
+
+        window.onload = function() {
+            db.ref('store_status/isOpen').on('value', (snapshot) => {
+                const val = snapshot.val();
+                isStoreOpen = (val !== null) ? val : true;
+                renderStoreStatus();
+            });
+
+            db.ref('admin_orders').on('value', (snapshot) => {
+                renderAdminOrders(snapshot.val());
+            });
+        };
+
+        function renderStoreStatus() {
+            const displayCard = document.getElementById('storeStatusDisplay');
+            const adminBtn = document.getElementById('adminToggleStoreBtn');
+
+            if(isStoreOpen) {
+                displayCard.innerText = '🟢 ຮ້ານເປີດຢູ່ (ພ້ອມຮັບອໍເດີ)';
+                displayCard.className = 'store-status-card store-open';
+                if(adminBtn) {
+                    adminBtn.innerText = 'ປ່ຽນເປັນ: 🔴 ຮ້ານປິດ';
+                    adminBtn.style.backgroundColor = '#a855f7';
+                }
+            } else {
+                displayCard.innerText = '🔴 ຮ້ານປິດຢູ່ (ງົດຮັບອໍເດີຊົ່ວຄາວ)';
+                displayCard.className = 'store-status-card store-closed';
+                if(adminBtn) {
+                    adminBtn.innerText = 'ປ່ຽນເປັນ: 🟢 ຮ້ານເປີດ';
+                    adminBtn.style.backgroundColor = '#34d399';
+                }
+            }
+        }
+
+        function toggleStoreOpenStatus() {
+            isStoreOpen = !isStoreOpen;
+            db.ref('store_status/isOpen').set(isStoreOpen);
+            showAlert('📢 ແຈ້ງເຕືອນ', `ປ່ຽນສະຖານະຮ້ານເປັນ: ${isStoreOpen ? '🟢 ຮ້ານເປີດຢູ່' : '🔴 ຮ້ານປິດຢູ່'} ຮຽບຮ້ອຍແລ້ວ!`);
+        }
+
+        function showAlert(title, desc, callback = null) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('custom-modal').style.display = 'flex';
+            
+            document.getElementById('modal-spinner').style.display = 'none';
+            document.getElementById('modal-btn-yes').style.display = 'none';
+            document.getElementById('modal-btn-no').style.display = 'none';
+            document.getElementById('modal-btn-ok').style.display = 'block';
+            pendingAction = null;
+        }
+
+        function showLoading(title, desc) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('custom-modal').style.display = 'flex';
+            
+            document.getElementById('modal-spinner').style.display = 'block';
+            document.getElementById('modal-btn-yes').style.display = 'none';
+            document.getElementById('modal-btn-no').style.display = 'none';
+            document.getElementById('modal-btn-ok').style.display = 'none';
+            pendingAction = null;
+        }
+
+        function closeModal() {
+            document.getElementById('custom-modal').style.display = 'none';
+            pendingAction = null;
+        }
+
+        function toggleNotificationDropdown() {
+            const dd = document.getElementById('notification-dropdown');
+            dd.style.display = (dd.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function loadUserNotifications(username) {
+            const userKey = sanitizeKey(username);
+            db.ref('users/' + userKey + '/notifications').on('value', (snapshot) => {
+                const data = snapshot.val();
+                const listEl = document.getElementById('notification-list');
+                const countEl = document.getElementById('notif-count');
+
+                if(!data) {
+                    listEl.innerHTML = 'ຍັງບໍ່ມີການແຈ້ງເຕືອນ';
+                    countEl.innerText = '0';
+                    return;
+                }
+
+                let keys = Object.keys(data);
+                countEl.innerText = keys.length;
+
+                let html = '';
+                keys.reverse().forEach(k => {
+                    let notif = data[k];
+                    html += `
+                    <div style="background: #0d0b14; border: 1px solid #3b2a54; padding: 8px; border-radius: 6px; margin-bottom: 6px; position: relative;">
+                        <p style="color: #fff; margin-bottom: 4px; white-space: pre-line;">${notif.message}</p>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 10px; color: #888;">${new Date(notif.timestamp).toLocaleString()}</span>
+                            <button onclick="deleteSingleNotification('${username}', '${k}')" style="background: #a855f7; color: #fff; border:none; padding:2px 6px; border-radius:3px; font-size:10px; cursor:pointer;">🗑️ ລຶບ</button>
+                        </div>
+                    </div>`;
+                });
+                listEl.innerHTML = html;
+            });
+        }
+
+        function deleteSingleNotification(username, notifKey) {
+            const userKey = sanitizeKey(username);
+            db.ref('users/' + userKey + '/notifications/' + notifKey).remove();
+        }
+
+        function clearAllNotifications() {
+            if(!currentUser) return;
+            const userKey = sanitizeKey(currentUser.username);
+            db.ref('users/' + userKey + '/notifications').remove().then(() => {
+                showAlert('🗑️ ລຶບແລ້ວ', 'ລຶບປະຫວັດການແຈ້ງເຕືອນທັງໝົດແລ້ວ!');
+            });
+        }
+
+        function switchAuthMode(mode) {
+            authMode = mode;
+            const tabLogin = document.getElementById('tab-login');
+            const tabRegister = document.getElementById('tab-register');
+            const authBtn = document.getElementById('auth-btn');
+            const gmailGroup = document.getElementById('gmail-group');
+            const codeGroup = document.getElementById('code-group');
+            const btnSendCode = document.getElementById('btn-send-code');
+            const passInput = document.getElementById('auth-password');
+            const forgotLink = document.getElementById('forgot-btn-link');
+
+            if(mode === 'login') {
+                tabLogin.classList.add('active');
+                tabRegister.classList.remove('active');
+                authBtn.innerText = 'ເຂົ້າສູ່ລະບົບ';
+                gmailGroup.style.display = 'none';
+                codeGroup.style.display = 'none';
+                btnSendCode.style.display = 'none';
+                passInput.placeholder = 'ລະຫັດຜ່ານ (Password)';
+                forgotLink.style.display = 'block';
+            } else if(mode === 'register') {
+                tabRegister.classList.add('active');
+                tabLogin.classList.remove('active');
+                authBtn.innerText = 'ຢືນຢັນການສະໝັກສະມາຊິກ';
+                gmailGroup.style.display = 'block';
+                codeGroup.style.display = 'none';
+                btnSendCode.style.display = 'none';
+                passInput.placeholder = 'ຕັ້ງລະຫັດຜ່ານ (Password)';
+                forgotLink.style.display = 'none';
+            } else if(mode === 'forgot') {
+                tabLogin.classList.remove('active');
+                tabRegister.classList.remove('active');
+                authBtn.innerText = '🔄 ຢືນຢັນປ່ຽນລະຫັດຜ່ານໃໝ່';
+                gmailGroup.style.display = 'block';
+                codeGroup.style.display = 'block';
+                btnSendCode.style.display = 'block';
+                passInput.placeholder = 'ຕັ້ງລະຫັດຜ່ານໃໝ່ (New Password)';
+                forgotLink.style.display = 'none';
+            }
+        }
+
+        function isValidGmail(gmail) {
+            return /^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(gmail);
+        }
+
+        function sendRealEmailCode() {
+            const gmailIn = document.getElementById('auth-gmail').value.trim();
+            const userIn = document.getElementById('auth-username').value.trim();
+
+            if(!isValidGmail(gmailIn)) {
+                showAlert('❌ ແຈ້ງເຕືອນ', 'ກະລຸນາປ້ອນ Gmail ໃຫ້ຖືກຕ້ອງ! (@gmail.com)');
+                return;
+            }
+
+            const userKey = sanitizeKey(userIn);
+            db.ref('users/' + userKey).once('value', (snapshot) => {
+                const userData = snapshot.val();
+                if(!userData || userData.gmail.toLowerCase() !== gmailIn.toLowerCase()) {
+                    showAlert('❌ ແຈ້ງເຕືອນ', 'ບໍ່ພົບ Gmail ແລະ ຊື່ສະມາຊິກນີ້ໃນລະບົບ!');
+                    return;
+                }
+
+                generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+                emailjs.send('service_ud4vfuy', 'template_8zrxyba', {
+                    to_email: gmailIn,
+                    otp_code: generatedCode
+                }).then(() => {
+                    showAlert('📧 ສຳເລັດ', `ສົ່ງລະຫັດ OTP ໄປທີ່ Gmail: ${gmailIn} ຮຽບຮ້ອຍແລ້ວ!`);
+                }).catch(err => {
+                    showAlert('❌ ຜິດພາດ', 'ສົ່ງອີເມວບໍ່ສໍາເລັດ: ' + JSON.stringify(err));
+                });
+            });
+        }
+
+        function handleAuth() {
+            const userIn = document.getElementById('auth-username').value.trim();
+            const passIn = document.getElementById('auth-password').value.trim();
+
+            if(!userIn || !passIn) {
+                showAlert('⚠️ ແຈ້ງເຕືອນ', 'ກະລຸນາປ້ອນຂໍ້ມູນໃຫ້ຄົບຖ້ວນ!');
+                return;
+            }
+
+            const userKey = sanitizeKey(userIn);
+
+            if(authMode === 'register') {
+                const gmailIn = document.getElementById('auth-gmail').value.trim();
+
+                if(!isValidGmail(gmailIn)) {
+                    showAlert('❌ ແຈ້ງເຕືອນ', 'ກະລຸນາປ້ອນ Gmail ທີ່ໃຊ້ໄດ້ຈິງ! (@gmail.com)');
+                    return;
+                }
+
+                db.ref('users/' + userKey).once('value', (snapshot) => {
+                    if(snapshot.exists()) {
+                        showAlert('❌ ແຈ້ງເຕືອນ', 'ຊື່ສະມາຊິກນີ້ມີຜູ້ໃຊ້ແລ້ວ!');
+                        return;
+                    }
+
+                    const newUser = {
+                        username: userIn,
+                        password: passIn,
+                        gmail: gmailIn,
+                        balance: 0,
+                        lastStatus: '',
+                        customMsg: ''
+                    };
+
+                    db.ref('users/' + userKey).set(newUser).then(() => {
+                        showAlert('✅ ສຳເລັດ', 'ສະໝັກສະມາຊິກສໍາເລັດ! ກະລຸນາເຂົ້າສູ່ລະບົບ.', () => {
+                            switchAuthMode('login');
+                        });
+                    });
+                });
+
+            } else if(authMode === 'forgot') {
+                const gmailIn = document.getElementById('auth-gmail').value.trim();
+                const codeIn = document.getElementById('auth-email-code').value.trim();
+
+                if(!generatedCode || codeIn !== generatedCode) {
+                    showAlert('❌ ແຈ້ງເຕືອນ', 'ລະຫັດຢືນຢັນ ຈາກ Gmail ບໍ່ຖືກຕ້ອງ!');
+                    return;
+                }
+
+                db.ref('users/' + userKey).once('value', (snapshot) => {
+                    if(snapshot.exists() && snapshot.val().gmail.toLowerCase() === gmailIn.toLowerCase()) {
+                        db.ref('users/' + userKey + '/password').set(passIn).then(() => {
+                            showAlert('✅ ສຳເລັດ', 'ປ່ຽນລະຫັດຜ່ານໃໝ່ສໍາເລັດແລ້ວ!', () => {
+                                generatedCode = null;
+                                switchAuthMode('login');
+                            });
+                        });
+                    } else {
+                        showAlert('❌ ແຈ້ງເຕືອນ', 'ຂໍ້ມູນບໍ່ກົງກັບໃນລະບົບ!');
+                    }
+                });
+
+            } else {
+                db.ref('users/' + userKey).once('value', (snapshot) => {
+                    let userData = snapshot.val();
+
+                    if(!userData && userIn.toLowerCase() === 'tonka' && passIn === '776655990088') {
+                        userData = { username: 'tonka', password: '776655990088', gmail: 'admin@gmail.com', balance: 0, lastStatus: '', customMsg: '' };
+                        db.ref('users/' + userKey).set(userData);
+                    }
+
+                    if(userData && userData.password === passIn) {
+                        currentUser = userData;
+                        document.getElementById('display-username').innerText = currentUser.username;
+                        document.getElementById('auth-logged-out').style.display = 'none';
+                        document.getElementById('auth-logged-in').style.display = 'flex';
+                        document.getElementById('status-panel').style.display = 'block';
+                        document.getElementById('bell-section').style.display = 'block';
+
+                        loadUserNotifications(currentUser.username);
+
+                        db.ref('users/' + userKey).on('value', (sn) => {
+                            if(sn.exists()) {
+                                currentUser = sn.val();
+                                document.getElementById('display-balance').innerText = Number(currentUser.balance || 0).toLocaleString();
+                                updateUserStatusDisplay();
+                            }
+                        });
+
+                        if(currentUser.username.toLowerCase() === 'tonka') {
+                            document.getElementById('btn-admin').style.display = 'block';
+                        } else {
+                            document.getElementById('btn-admin').style.display = 'none';
+                        }
+
+                        showAlert('🎉 ຍິນດີຕ້ອນຮັບ', `ຍິນດີຕ້ອນຮັບສູ່ Tonka, ${currentUser.username}!`);
+                    } else {
+                        showAlert('❌ ແຈ້ງເຕືອນ', 'ຊື່ສະມາຊິກ ຫຼື ລະຫັດຜ່ານ ບໍ່ຖືກຕ້ອງ!');
+                    }
+                });
+            }
+        }
+
+        function updateUserStatusDisplay() {
+            const statusBox = document.getElementById('status-message');
+            if(currentUser) {
+                let html = '';
+                if(currentUser.lastStatus === 'pending') {
+                    html += `<div class="status-pending">⏳ ອໍເດີລ້າສຸດ: ກະລຸນາລໍຖ້າ ແອດມິນກຳລັງດຳເນີນການເຕີມເກມໃຫ້...</div>`;
+                } else if(currentUser.lastStatus === 'success') {
+                    html += `<div class="status-success">🎉 ອໍເດີລ້າສຸດ: ເຕີມສຳເລັດແລ້ວ! ຂອບໃຈທີ່ໃຊ້ບໍລິການ Tonka.</div>`;
+                } else if(currentUser.lastStatus === 'fail') {
+                    html += `<div class="status-fail">❌ ອໍເດີລ້າສຸດ: ເຕີມບໍ່ສຳເລັດ! ກະລຸນາທັກຫາແອດມິນ WhatsApp.</div>`;
+                }
+
+                if(currentUser.customMsg) {
+                    html += `<div class="status-custom">💬 ຂໍ້ຄວາມຈາກແອດມິນ: ${currentUser.customMsg}</div>`;
+                }
+
+                if(!html) {
+                    html = `<span style="color: #aaa; font-size: 13px;">ຍັງບໍ່ມີປະວັດການແຈ້ງເຕືອນ</span>`;
+                }
+
+                statusBox.innerHTML = html;
+            }
+        }
+
+        function logout() {
+            if(currentUser) {
+                const userKey = sanitizeKey(currentUser.username);
+                db.ref('users/' + userKey).off();
+            }
+            currentUser = null;
+            document.getElementById('auth-logged-out').style.display = 'block';
+            document.getElementById('auth-logged-in').style.display = 'none';
+            document.getElementById('status-panel').style.display = 'none';
+            document.getElementById('bell-section').style.display = 'none';
+            document.getElementById('admin-form').classList.remove('active');
+            document.getElementById('money-form').classList.remove('active');
+            document.getElementById('card-money-form').classList.remove('active');
+            document.getElementById('topup-form').classList.remove('active');
+            switchAuthMode('login');
+            showAlert('👋 ອອກຈາກລະບົບ', 'ອອກຈາກລະບົບຮຽບຮ້ອຍແລ້ວ.');
+        }
+
+        function openMoneyForm() {
+            document.getElementById('money-form').classList.add('active');
+            document.getElementById('card-money-form').classList.remove('active');
+            document.getElementById('topup-form').classList.remove('active');
+            document.getElementById('admin-form').classList.remove('active');
+        }
+
+        function closeMoneyForm() { document.getElementById('money-form').classList.remove('active'); }
+
+        function openCardMoneyForm() {
+            document.getElementById('card-money-form').classList.add('active');
+            document.getElementById('money-form').classList.remove('active');
+            document.getElementById('topup-form').classList.remove('active');
+            document.getElementById('admin-form').classList.remove('active');
+        }
+
+        function closeCardMoneyForm() { document.getElementById('card-money-form').classList.remove('active'); }
+
+        function openAdminPanel() {
+            document.getElementById('admin-form').classList.add('active');
+            document.getElementById('money-form').classList.remove('active');
+            document.getElementById('card-money-form').classList.remove('active');
+            document.getElementById('topup-form').classList.remove('active');
+            loadAdminCodesList();
+        }
+
+        function closeAdminPanel() { document.getElementById('admin-form').classList.remove('active'); }
+
+        function adminCreateRedeemCode() {
+            const codeStr = document.getElementById('admin-code-str').value.trim();
+            const amount = parseInt(document.getElementById('admin-code-amount').value);
+            const limit = parseInt(document.getElementById('admin-code-limit').value) || 1;
+
+            if(!codeStr || isNaN(amount) || amount <= 0) {
+                showAlert('❌ ແຈ້ງເຕືອນ', 'ກະລຸນາປ້ອນລະຫັດໂຄດ ແລະ ຈຳນວນເງິນໃຫ້ຖືກຕ້ອງ!');
+                return;
+            }
+
+            const codeKey = sanitizeKey(codeStr);
+            db.ref('redeem_codes/' + codeKey).set({
+                code: codeStr,
+                amount: amount,
+                limit: limit,
+                usedCount: 0
+            }).then(() => {
+                showAlert('✅ ສຳເລັດ', `ສ້າງໂຄດ "${codeStr}" ມູນຄ່າ ${amount.toLocaleString()} ₭ ສຳເລັດແລ້ວ!`);
+                document.getElementById('admin-code-str').value = '';
+                document.getElementById('admin-code-amount').value = '';
+                document.getElementById('admin-code-limit').value = '1';
+                loadAdminCodesList();
+            });
+        }
+
+        function loadAdminCodesList() {
+            const container = document.getElementById('admin-codes-manage-list');
+            container.innerHTML = 'ກຳລັງໂຫຼດ...';
+            db.ref('redeem_codes').once('value', (snapshot) => {
+                const data = snapshot.val();
+                if(!data) {
+                    container.innerHTML = 'ຍັງບໍ່ມີໂຄດໃນລະບົບ';
+                    return;
+                }
+                let html = '';
+                for(let key in data) {
+                    let item = data[key];
+                    html += `<div style="background: #171024; border: 1px solid #a855f7; padding: 6px; border-radius: 4px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+                        <span><b>${item.code}</b> (${Number(item.amount).toLocaleString()} ₭ | ໃຊ້ໄປ ${item.usedCount}/${item.limit})</span>
+                        <button onclick="deleteRedeemCode('${key}')" style="background: #a855f7; color:#fff; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;">ລຶບ</button>
+                    </div>`;
+                }
+                container.innerHTML = html;
+            });
+        }
+
+        function deleteRedeemCode(key) {
+            db.ref('redeem_codes/' + key).remove().then(() => { loadAdminCodesList(); });
+        }
+
+        function submitRedeemCode() {
+            const codeInput = document.getElementById('redeem-code-input').value.trim();
+            if(!codeInput) {
+                showAlert('❌ ແຈ້ງເຕືອນ', 'ກະລຸນາປ້ອນລະຫັດໂຄດ!');
+                return;
+            }
+
+            const codeKey = sanitizeKey(codeInput);
+            db.ref('redeem_codes/' + codeKey).once('value', (snapshot) => {
+                if(!snapshot.exists()) {
+                    showAlert('❌ ຜິດພາດ', 'ລະຫັດໂຄດນີ້ບໍ່ມີໃນລະບົບ!');
+                    return;
+                }
+
+                let codeData = snapshot.val();
+                if(codeData.usedCount >= codeData.limit) {
+                    showAlert('❌ ໝົດສິດໃຊ້', 'ລະຫັດໂຄດນີ້ຖືກໃຊ້ຈຳນວນຄັ້ງເຕັມແລ້ວ!');
+                    return;
+                }
+
+                const userKey = sanitizeKey(currentUser.username);
+                db.ref('users/' + userKey + '/redeemed_codes/' + codeKey).once('value', (sn) => {
+                    if(sn.exists()) {
+                        showAlert('❌ ແຈ້ງເຕືອນ', 'ທ່ານໄດ້ໃຊ້ໂຄດນີ້ໄປແລ້ວ!');
+                        return;
+                    }
+
+                    const newBalance = (currentUser.balance || 0) + codeData.amount;
+                    const newUsedCount = (codeData.usedCount || 0) + 1;
+
+                    db.ref('users/' + userKey + '/balance').set(newBalance).then(() => {
+                        db.ref('redeem_codes/' + codeKey + '/usedCount').set(newUsedCount);
+                        db.ref('users/' + userKey + '/redeemed_codes/' + codeKey).set(true);
+
+                        db.ref('users/' + userKey + '/notifications').push({
+                            message: `🎁 ໃຊ້ໂຄດ "${codeData.code}" ສຳເລັດ! ໄດ້ຮັບເງິນ ${Number(codeData.amount).toLocaleString()} ₭`,
+                            timestamp: Date.now()
+                        });
+
+                        showAlert('🎉 ສຳເລັດ', `ເຕີມເງິນຜ່ານໂຄດສຳເລັດ! ໄດ້ຮັບເງິນ ${Number(codeData.amount).toLocaleString()} ກີບ`);
+                        document.getElementById('redeem-code-input').value = '';
+                        closeMoneyForm();
+                    });
+                });
+            });
+        }
+
+        function renderAdminOrders(ordersObj) {
+            const container = document.getElementById('admin-orders-list');
+            if(!ordersObj) {
+                container.innerHTML = `<span style="color: #aaa;">ຍັງບໍ່ມີອໍເດີເຂົ້າມາ</span>`;
+                return;
+            }
+
+            let html = '';
+            for(let key in ordersObj) {
+                let order = ordersObj[key];
+                let isCard = order.game && order.game.includes('ບັດເຕີມເນັດ');
+
+                html += `<div style="background: #0d0b14; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid #a855f7; text-align: left;">
+                    <b>👤 ${order.username}</b> (${order.game})<br>
+                    💎 ${order.packageText} - <span style="color: #34d399; font-weight: bold;">${Number(order.price).toLocaleString()} ກີບ</span><br>
+                    🆔 ID: ${order.userId}<br>`;
+                
+                if(order.slipImage) {
+                    html += `<div style="margin-top: 6px;">
+                        <span style="color: #c084fc; font-weight: bold;">🖼️ ຮູບ Slip ໂອນເງິນ:</span><br>
+                        <a href="${order.slipImage}" target="_blank">
+                            <img src="${order.slipImage}" class="slip-img-preview" alt="Slip image">
+                        </a>
+                    </div>`;
+                }
+
+                if(isCard) {
+                    let net = order.game.includes('Unitel') ? order.price * 0.65 : order.price * 0.60;
+                    html += `<button onclick="approveCardMoney('${key}', '${order.username}', ${order.price}, ${net})" style="background: #34d399; color: #0d0b14; border:none; padding:6px 12px; border-radius:6px; margin-top:8px; cursor:pointer; font-weight: bold; width: 100%;">✅ ອະນຸຍາດເງິນເຂົ້າ (ຮັບ ${net.toLocaleString()} ₭)</button>`;
+                }
+
+                html += `<button onclick="removeAdminOrder('${key}')" style="background: #a855f7; color: #fff; border:none; padding:4px 8px; border-radius:4px; margin-top:6px; cursor:pointer; font-size:11px;">🗑️ ລຶບ/ລ້າງອໍເດີນີ້</button>
+                </div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        function approveCardMoney(orderKey, username, cardPrice, netAmount) {
+            const userKey = sanitizeKey(username);
+
+            db.ref('users/' + userKey).once('value', (snapshot) => {
+                if(!snapshot.exists()) {
+                    showAlert('❌ ຜິດພາດ', `ບໍ່ພົບຊື່ສະມາຊິກ "${username}" ໃນລະບົບ!`);
+                    return;
+                }
+
+                const currentBal = snapshot.val().balance || 0;
+                const newBal = currentBal + netAmount;
+
+                db.ref('users/' + userKey + '/balance').set(newBal).then(() => {
+                    db.ref('admin_orders/' + orderKey).remove().then(() => {
+                        const notifMsg = `🎉 ຕື່ມເງິນບັດເຕີມເນັດສຳເລັດ!\n💰 ມູນຄ່າບັດ: ${cardPrice.toLocaleString()} ₭\n💵 ເງິນເຂົ້າບັນຊີ: ${netAmount.toLocaleString()} ₭`;
+                        db.ref('users/' + userKey + '/notifications').push({
+                            message: notifMsg,
+                            timestamp: Date.now()
+                        });
+                        showAlert('✅ ຕື່ມເງິນສຳເລັດແລ້ວ', `✨ ຜູ້ໃຊ້: ${username}\n💰 ມູນຄ່າບັດ: ${cardPrice.toLocaleString()} ກີບ\n💵 ເງິນເຂົ້າບັນຊີ: ${netAmount.toLocaleString()} ກີບ`);
+                    });
+                });
+            });
+        }
+
+        function removeAdminOrder(orderKey) {
+            db.ref('admin_orders/' + orderKey).remove();
+        }
+
+        function adminApproveMoney() {
+            const targetUsername = document.getElementById('admin-target-user').value.trim();
+            const addAmount = parseInt(document.getElementById('admin-add-amount').value);
+
+            if(!targetUsername || !addAmount || isNaN(addAmount)) {
+                showAlert('❌ ແຈ້ງເຕືອນ', 'ກະລຸນາປ້ອນຊື່ລູກຄ້າ ແລະ ຈຳນວນເງິນໃຫ້ຖືກຕ້ອງ!');
+                return;
+            }
+
+            const targetKey = sanitizeKey(targetUsername);
+            db.ref('users/' + targetKey).once('value', (snapshot) => {
+                if(!snapshot.exists()) {
+                    showAlert('❌ ແຈ້ງເຕືອນ', `ບໍ່ພົບຊື່ສະມາຊິກ "${targetUsername}" ໃນລະບົບ!`);
+                    return;
+                }
+
+                const currentBal = snapshot.val().balance || 0;
+                const newBal = currentBal + addAmount;
+
+                db.ref('users/' + targetKey + '/balance').set(newBal).then(() => {
+                    db.ref('users/' + targetKey + '/notifications').push({
+                        message: `💰 ແອດມິນໄດ້ບວກຍອດເງິນ ${addAmount.toLocaleString()} ₭ ໃຫ້ທ່ານແລ້ວ!`,
+                        timestamp: Date.now()
+                    });
+                    showAlert('✅ ສຳເລັດ', `ບວກຍອດເງິນ ${addAmount.toLocaleString()} ກີບ ສຳເລັດແລ້ວ!`);
+                    document.getElementById('admin-add-amount').value = '';
+                });
+            });
+        }
+
+        function adminSetStatus(status) {
+            const targetUsername = document.getElementById('admin-target-user').value.trim();
+            if(!targetUsername) {
+                showAlert('❌ ແຈ້ງເຕືອນ', 'ກະລຸນາປ້ອນຊື່ Username ຂອງລູກຄ້າກ່ອນ!');
+                return;
+            }
+            const targetKey = sanitizeKey(targetUsername);
+            db.ref('users/' + targetKey).once('value', (snapshot) => {
+                if(!snapshot.exists()) {
+                    showAlert('❌ ແຈ້ງເຕືອນ', `ບໍ່ພົບຊື່ສະມາຊິກ "${targetUsername}" ໃນລະບົບ!`);
+                    return;
+                }
+                db.ref('users/' + targetKey + '/lastStatus').set(status).then(() => {
+                    showAlert('✅ ສຳເລັດ', `ອັບເດດສະຖານະເປັນ "${status}" ໃຫ້ລູກຄ້າ ${targetUsername} ແລ້ວ!`);
+                });
+            });
+        }
+
+        function adminSendCustomMessage() {
+            const targetUsername = document.getElementById('admin-target-user').value.trim();
+            const customMsg = document.getElementById('admin-custom-msg').value.trim();
+
+            if(!targetUsername) {
+                showAlert('❌ ແຈ້ງເຕືອນ', 'ກະລຸນາປ້ອນຊື່ Username ຂອງລູກຄ້າກ່ອນ!');
+                return;
+            }
+
+            const targetKey = sanitizeKey(targetUsername);
+            db.ref('users/' + targetKey).once('value', (snapshot) => {
+                if(!snapshot.exists()) {
+                    showAlert('❌ ແຈ້ງເຕືອນ', `ບໍ່ພົບຊື່ສະມາຊິກ "${targetUsername}" ໃນລະບົບ!`);
+                    return;
+                }
+
+                db.ref('users/' + targetKey).update({
+                    customMsg: customMsg
+                }).then(() => {
+                    if(customMsg) {
+                        db.ref('users/' + targetKey + '/notifications').push({
+                            message: `📢 ຂໍ້ຄວາມຈາກແອດມິນ: ${customMsg}`,
+                            timestamp: Date.now()
+                        });
+                    }
+                    showAlert('✅ ສຳເລັດ', `ສົ່ງຂໍຄວາມຫາລູກຄ້າ ${targetUsername} ຮຽບຮ້ອຍແລ້ວ!`);
+                    document.getElementById('admin-custom-msg').value = '';
+                });
+            });
+        }
+
+        function submitMoneyTopup() {
+            const amountInput = document.getElementById('money-amount-input').value;
+            const addAmount = parseInt(amountInput);
+            const slipInput = document.getElementById('slip-file');
+
+            if(!amountInput || isNaN(addAmount) || addAmount <= 0) {
+                showAlert('❌ ແຈ້ງເຕືອນ', 'ກະລຸນາປ້ອນຈຳນວນເງິນໃຫ້ຖືກຕ້ອງ!');
+                return;
+            }
+
+            if(slipInput.files.length === 0) {
+                showAlert('❌ ແຈ້ງເຕືອນ', 'ກະລຸນາແນບຮູບໃບໂອນເງິນ (Slip) ກ່ອນ!');
+                return;
+            }
+
+            showLoading('⏳ ກຳລັງສົ່ງຂໍ້ມູນ', 'ກະລຸນາລໍຖ້າ...');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const username = currentUser ? currentUser.username : 'Guest';
+                
+                db.ref('admin_orders').push({
+                    username: username,
+                    game: 'ຕື່ມເງິນ QR',
+                    packageText: `ຕື່ມເງິນ ${addAmount.toLocaleString()} ກີບ`,
+                    price: addAmount,
+                    userId: 'ມີ Slip ໂອນເງິນ',
+                    slipImage: e.target.result,
+                    timestamp: Date.now()
+                }).then(() => {
+                    closeModal();
+                    
+                    const waText = encodeURIComponent(`🔔 ວອດເຕີມເງິນໃໝ່!\n👤 ຜູ້ໃຊ້: ${username}\n💰 ຈຳນວນເງິນ: ${addAmount.toLocaleString()} ກີບ\n📌 (ລູກຄ້າໄດ້ສົ່ງ Slip ເຂົ້າລະບົບເວັບແລ້ວ)`);
+                    const waURL = `https://wa.me/8562091298408?text=${waText}`;
+
+                    window.open(waURL, '_blank');
+
+                    showAlert('✅ ສຳເລັດ', 'ສົ່ງ Slip ໃຫ້ແອດມິນຮຽບຮ້ອຍແລ້ວ!', () => {
+                        document.getElementById('money-amount-input').value = '';
+                        slipInput.value = '';
+                        closeMoneyForm();
+                    });
+                });
+            };
+            reader.readAsDataURL(slipInput.files[0]);
+        }
+
+        function submitCardMoneyTopup() {
+            const network = document.getElementById('balance-card-network').value;
+            const amount = parseInt(document.getElementById('balance-card-amount').value);
+            const pin = document.getElementById('balance-card-pin').value.trim();
+
+            if(!pin) {
+                showAlert('❌ ແຈ້ງເຕືອນ', 'ກະລຸນາປ້ອນລະຫັດບັດ!');
+                return;
+            }
+
+            showLoading('⏳ ກຳລັງກວດສອບ', 'ກະລຸນາລໍຖ້າ...');
+            setTimeout(() => {
+                const username = currentUser ? currentUser.username : 'Guest';
+
+                db.ref('admin_orders').push({
+                    username: username,
+                    game: 'ບັດເຕີມເນັດ (' + network + ')',
+                    packageText: `ມູນຄ່າ ${amount.toLocaleString()} ກີບ`,
+                    price: amount,
+                    userId: `PIN: ${pin}`,
+                    slipImage: '',
+                    timestamp: Date.now()
+                }).then(() => {
+                    closeModal();
+
+                    const waText = encodeURIComponent(`📱 ແຈ້ງເຕືອນບັດເຕີມເນັດ!\n👤 ຜູ້ໃຊ້: ${username}\n🌐 ເຄືອຂ່າຍ: ${network}\n💰 ມູນຄ່າ: ${amount.toLocaleString()} ₭\n🔑 PIN: ${pin}`);
+                    const waURL = `https://wa.me/8562091298408?text=${waText}`;
+
+                    window.open(waURL, '_blank');
+
+                    showAlert('✅ ສຳເລັດ', 'ສົ່ງຂໍ້ມູນບັດເຕີມເນັດໃຫ້ແອດມິນຮຽບຮ້ອຍ!', () => {
+                        document.getElementById('balance-card-pin').value = '';
+                        closeCardMoneyForm();
+                    });
+                });
+            }, 1200);
+        }
+
+        /* 📌 ຂໍ້ມູນແພັກເກັດເກມ (ອັບເດດລາຄາ Mobile Legends ຕາມທີ່ຂໍ) */
+        const gamePackages = {
+            'Free Fire': [
+                { text: '33 💎', value: 8000, discount: '🔥 ຍອດນິຍົມ' },
+                { text: '68 💎', value: 19000, discount: '🔥 ຍອດນິຍົມ' },
+                { text: '172 💎', value: 40000, discount: '🔥 ຍອດນິຍົມ' },
+                { text: '310 💎', value: 69000, discount: '🔥 ຍອດນິຍົມ' },
+                { text: '517 💎', value: 110000, discount: '🔥 ຍອດນິຍົມ' },
+                { text: '690 💎', value: 144000, discount: '🔥 ຍອດນິຍົມ' },
+                { text: '1,052 💎', value: 210000, discount: '🔥 ຍອດນິຍົມ' },
+                { text: '1,801 💎', value: 345000, discount: '🔥 ຄຸ້ມສຸດ' },
+                { text: '3,869 💎', value: 695000, discount: '🔥 ຄຸ້ມສຸດ' }
+            ],
+            'Mobile Legends': [
+                { text: '86 💎', value: 39000, discount: '🔥 ຍອດນິຍົມ' },
+                { text: '172 💎', value: 69000, discount: '🔥 ຍອດນິຍົມ' },
+                { text: '257 💎', value: 99000, discount: '🔥 ຍອດນິຍົມ' },
+                { text: '706 💎', value: 259000, discount: '🔥 ຍອດນິຍົມ' },
+                { text: '2,195 💎', value: 699000, discount: '🔥 ຍອດນິຍົມ' },
+                { text: '3,688 💎', value: 1199000, discount: '🔥 ຄຸ້ມສຸດ' },
+                { text: '5,532 💎', value: 1999000, discount: '🔥 ຄຸ້ມສຸດ' },
+                { text: '9,288 💎', value: 2999000, discount: '🔥 ຄຸ້ມສຸດ' }
+            ]
+        };
+
+        function selectGame(gameName) {
+            currentGame = gameName;
+            document.getElementById('selected-game-title').innerText = 'ເຕີມເກມ: ' + gameName;
+            document.getElementById('topup-form').classList.add('active');
+            document.getElementById('money-form').classList.remove('active');
+            document.getElementById('card-money-form').classList.remove('active');
+            document.getElementById('admin-form').classList.remove('active');
+            
+            document.getElementById('id-label').innerText = 'ID ເກມ / User ID (' + gameName + '):';
+            document.getElementById('user-id').placeholder = 'ກະລຸນາປ້ອນ ID ຂອງທ່ານ';
+            
+            renderPackagesGrid(gamePackages[gameName] || []);
+        }
+
+        function renderPackagesGrid(options) {
+            const container = document.getElementById('packages-container');
+            container.innerHTML = '';
+            selectedPackageValue = null;
+            selectedPackageText = '';
+
+            options.forEach((opt, index) => {
+                const card = document.createElement('div');
+                card.className = 'package-card-item' + (index === 0 ? ' selected' : '');
+                
+                if (index === 0) {
+                    selectedPackageValue = opt.value;
+                    selectedPackageText = opt.text + ' - ' + opt.value.toLocaleString() + ' ₭';
+                }
+
+                card.innerHTML = `
+                    <div class="pkg-badge">${opt.discount || '⚡ ຍອດນິຍົມ'}</div>
+                    <div class="pkg-emoji">💎</div>
+                    <div class="pkg-name">${opt.text}</div>
+                    <div class="pkg-price">${opt.value.toLocaleString()} ₭</div>
+                `;
+
+                card.onclick = function() {
+                    document.querySelectorAll('.package-card-item').forEach(el => el.classList.remove('selected'));
+                    card.classList.add('selected');
+                    selectedPackageValue = opt.value;
+                    selectedPackageText = opt.text + ' - ' + opt.value.toLocaleString() + ' ₭';
+                };
+
+                container.appendChild(card);
+            });
+        }
+
+        function submitTopup() {
+            if(!isStoreOpen) {
+                showAlert('🔴 ຮ້ານປິດ', 'ຂໍໂທດດ້ວຍ ຮ້ານປິດຢູ່ຊົ່ວຄາວ!');
+                return;
+            }
+            if(!currentUser) {
+                showAlert('⚠️ ກະລຸນາເຂົ້າສູ່ລະບົບ', 'ກະລຸນາ "ເຂົ້າສູ່ລະບົບ" ກ່ອນສັ່ງຊື້!');
+                return;
+            }
+
+            const userId = document.getElementById('user-id').value.trim();
+
+            if(!userId) {
+                showAlert('❌ ແຈ້ງເຕືອນ', 'ກະລຸນາປ້ອນ ID / ຊື່ເກມກ່ອນ!');
+                return;
+            }
+            if(!selectedPackageValue) {
+                showAlert('❌ ແຈ້ງເຕືອນ', 'ກະລຸນາເລືອກແພັກເກັດທີ່ຕ້ອງການ!');
+                return;
+            }
+            if((currentUser.balance || 0) < selectedPackageValue) {
+                showAlert('❌ ຍອດເງິນບໍ່ພໍ', 'ຍອດເງິນໃນກະເປົາຂອງທ່ານບໍ່ພໍ! ກະລຸນາຕື່ມເງິນຄືນ', () => { openMoneyForm(); });
+                return;
+            }
+
+            showLoading('⏳ ກຳລັງສັ່ງຊື້', 'ກະລຸນາລໍຖ້າ...');
+            setTimeout(() => {
+                const newBalance = currentUser.balance - selectedPackageValue;
+                const userKey = sanitizeKey(currentUser.username);
+
+                db.ref('users/' + userKey).update({ balance: newBalance, lastStatus: 'pending' }).then(() => {
+                    db.ref('admin_orders').push({
+                        username: currentUser.username,
+                        game: currentGame,
+                        packageText: selectedPackageText,
+                        price: selectedPackageValue,
+                        userId: userId,
+                        slipImage: '',
+                        timestamp: Date.now()
+                    }).then(() => {
+                        db.ref('users/' + userKey + '/notifications').push({
+                            message: `⏳ ສັ່ງຊື້ ${currentGame} (${selectedPackageText}) ສຳເລັດ! ກະລຸນາລໍຖ້າແອດມິນດຳເນີນການ.`,
+                            timestamp: Date.now()
+                        });
+
+                        const waText = encodeURIComponent(`🎮 ມີອໍເດີສັ່ງຊື້ ${currentGame} ໃໝ່!\n👤 ຜູ້ໃຊ້: ${currentUser.username}\n📦 ແພັກເກັດ: ${selectedPackageText}\n🆔 ID: ${userId}`);
+                        const waURL = `https://wa.me/8562091298408?text=${waText}`;
+                        window.open(waURL, '_blank');
+
+                        closeModal();
+                        showAlert('✅ ສຳເລັດ', 'ສົ່ງອໍເດີສຳເລັດແລ້ວ!', () => {
+                            document.getElementById('topup-form').classList.remove('active');
+                        });
+                    });
+                });
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
